@@ -1,0 +1,3 @@
+model:
+  arch: irae 
+  iso_reg: 1.0

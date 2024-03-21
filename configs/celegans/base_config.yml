@@ -1,0 +1,47 @@
+wandb_project_name: SemesterProject
+logdir: 'results/celegans'
+logger: 
+  type: base
+  endwith: ['@', '#']
+model:
+  encoder:
+    arch: fc_vec
+    l_hidden: [8, 16, 8, 4, ]
+    activation: ['elu', 'elu', 'elu', 'elu', ]
+    out_activation: 'linear'
+    img_size: [1, 100]
+    out_chan_num: 1
+  decoder:
+    arch: fc_vec
+    l_hidden: [4, 8, 16, 8, ]
+    activation: ['elu', 'elu', 'elu', 'elu', ]
+    out_activation: 'linear'
+    img_size: [1, 100]
+    out_chan_num: 1
+  x_dim: 100
+  z_dim: 2
+data:
+  training:
+    dataset: CELEGANS
+    root: datasets
+    batch_size: 100
+    n_workers: 4
+    split: training
+    shuffle: True
+  validation:
+    dataset: CELEGANS
+    root: datasets
+    batch_size: 100
+    n_workers: 4
+    split: validation
+    shuffle: True
+trainer: base
+training:
+  n_epoch: 300
+  optimizer:
+    name: 'adam'
+    lr: 0.0005
+  print_interval: 100
+  val_interval: 100
+  eval_interval: 1000
+  visualize_interval: 1000

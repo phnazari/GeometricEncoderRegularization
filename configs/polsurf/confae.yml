@@ -1,0 +1,3 @@
+model:
+  arch: confae 
+  conf_reg: 1.0
