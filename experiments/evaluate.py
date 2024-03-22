@@ -9,6 +9,7 @@ from experiments.plots import (
     visualize_metrics,
     reg_strength_plot,
     determinants_plots,
+    latent_plots
 )
 
 from utils.config import Config
@@ -25,7 +26,7 @@ if __name__ == "__main__":
     }
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
-    mode = "indicatrix"  # tradeoff, indicatrix, reg, all, detplot
+    mode = "latents"  # tradeoff, indicatrix, reg, all, detplot, latents
 
     # load results
     if load:
@@ -70,3 +71,8 @@ if __name__ == "__main__":
         for dataset in config["datasets"]:
             for model in config["models"]:
                 determinants_plots(dataset, get_best_model(dataset, results))
+
+    elif mode == "latents":
+        for dataset in config["datasets"]:
+            for model in config["models"]:
+                latent_plots(dataset, get_best_model(dataset, results))

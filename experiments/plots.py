@@ -8,7 +8,7 @@ from matplotlib.collections import PatchCollection
 from experiments.util import generate_tradeoff_data, get_dl, normalize
 
 from models import load_pretrained
-from geometry import get_pullbacked_Riemannian_metric
+from geometry import get_pullbacked_Riemannian_metric, get_pushforwarded_Riemannian_metric
 
 from experiments.util import (
     load_model,
@@ -170,6 +170,53 @@ Indicatrix Plots
 """
 
 
+def latent_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
+    data = torch.cat((test_dl.dataset.data, train_dl.dataset.data))
+    targets = torch.cat((test_dl.dataset.targets, train_dl.dataset.targets))
+    Z = model.encode(data).detach().cpu()  # .numpy()
+
+    if reg == "":
+        reg = 0
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+
+    ax.set_aspect("equal")
+    ax.axis("off")
+    fig.tight_layout(pad=0.0)
+    plt.margins(0.01, 0.01)
+
+    c = targets.detach().cpu()
+
+    ax.scatter(
+        Z[:, 0],
+        Z[:, 1],
+        c=c,
+        **get_sc_kwargs(),
+        zorder=0,
+    )
+    # plt.title(f"{model_name} @ {dataset_name} (reg={float(reg)})")
+    plt.savefig(
+        get_saving_dir(model_name, dataset_name, f"latents_reg{float(reg)}.png"),
+        **get_saving_kwargs(),
+    )
+
+    if config["show"]:
+        plt.show()
+
+
+def latent_plots(dataset_name, model_regs):
+    seed = 1
+
+    for model_name, reg in model_regs:
+        model, cfg = load_model(model_name, dataset_name, seed, reg)
+        train_dl = get_dl(cfg, dataset_name, split="train")
+        test_dl = get_dl(cfg, dataset_name)
+
+        print(dataset_name, model_name)
+
+        latent_plot(model, model_name, dataset_name, reg, test_dl, train_dl)
+
+    
 def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     # TODO: extract model_name and datase_name from model and test_dl
     data = torch.cat((test_dl.dataset.data, train_dl.dataset.data))
@@ -180,7 +227,7 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
         reg = 0
 
     coordinates = get_coordinates(
-        Z,
+        data.view(data.shape[0], -1),
         grid="on_data",
         num_steps=15,
         dataset_name=dataset_name,
@@ -201,7 +248,7 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     stepsize = min(step_size_x, step_size_y)
 
     # Z_pinned_data = model.encode(pinned_data)
-    G = get_pullbacked_Riemannian_metric(model.decode, coordinates)
+    G = get_pushforwarded_Riemannian_metric(model.encode, coordinates)
 
     vector_patches, _ = generate_unit_vectors(100, coordinates, G)
     vector_norms = torch.linalg.norm(vector_patches.reshape(-1, 2), dim=1)
@@ -309,7 +356,7 @@ Determinant Plot
 
 
 def determinants_plots(dataset_name, model_regs):
-    seed = 5
+    seed = 1
 
     for model_name, reg in model_regs:
         model, cfg = load_model(model_name, dataset_name, seed, reg)
@@ -335,15 +382,20 @@ def determinants_plot(
     if reg == "":
         reg = 0
 
-    latent_activations = model.encode(test_dl.dataset.data).detach().cpu()  # .numpy()
+    data = test_dl.dataset.data
+
+    latent_activations = model.encode(data).detach().cpu()  # .numpy()
 
     generator = torch.Generator().manual_seed(0)
-    perm = torch.randperm(latent_activations.shape[0], generator=generator)
+    perm = torch.randperm(data.shape[0], generator=generator)
+    data = data[perm]
     latent_activations = latent_activations[perm]
 
-    coordinates = get_coordinates(
-        torch.squeeze(latent_activations), grid=grid, num_steps=num_steps
-    )
+    #coordinates = get_coordinates(
+    #    torch.squeeze(data.view(data.shape[0], -1)), grid=grid, num_steps=num_steps
+    #)
+
+    coordinates = latent_activations
 
     # initialize diffgeo objects
 
@@ -352,7 +404,7 @@ def determinants_plot(
         batch_size = coordinates.shape[0]
 
     # calculate determinants
-    G = get_pullbacked_Riemannian_metric(model.decode, coordinates)
+    G = get_pushforwarded_Riemannian_metric(model.encode, data.view(data.shape[0], -1))
     determinants = torch.det(
         G
     ).sqrt()  # TODO: check if this is done along the correct dimension

@@ -10,6 +10,7 @@ from evaluation.eval import Multi_Evaluation
 from geometry import (
     relaxed_distortion_measure,
     get_pullbacked_Riemannian_metric,
+    get_pushforwarded_Riemannian_metric,
     get_flattening_scores,
     get_pullback_metric,
 )
@@ -56,7 +57,7 @@ class AE(nn.Module):
         labels_all = []
         for x, labels in dl:
             z = self.encode(x.to(device))
-            G = get_pullbacked_Riemannian_metric(self.decode, z)
+            G = get_pushforwarded_Riemannian_metric(self.encode, x.view(x.shape[0], -1).to(device))
             CN.append(get_flattening_scores(G, mode="condition_number"))
             voR.append(get_flattening_scores(G, mode="variance"))
             VP.append(get_flattening_scores(G, mode="volume_preserving"))
@@ -146,7 +147,8 @@ class AE(nn.Module):
             ]
             temp_z = self.encode(temp_data.to(device))
             z_sampled = temp_z[torch.randperm(len(temp_z))[:num_G_plots_for_each_class]]
-            G = get_pullbacked_Riemannian_metric(self.decode, z_sampled)
+            x_sampled = temp_data[torch.randperm(len(temp_data))[:num_G_plots_for_each_class]]
+            G = get_pushforwarded_Riemannian_metric(self.encode, x_sampled.view(x_sampled.shape[0], -1))
 
             z_.append(temp_z)
             label_.append(label.repeat(temp_z.size(0)))
@@ -209,7 +211,7 @@ class IRAE(AE):
         mse = ((recon - x) ** 2).view(len(x), -1).mean(dim=1).mean()
 
         iso_loss = relaxed_distortion_measure(
-            self.decode, z, eta=0.2, metric=self.metric, reg="iso"
+            self.encode, z, eta=0.2, metric=self.metric, reg="iso"
         )
 
         loss = mse + self.iso_reg * iso_loss
@@ -233,7 +235,7 @@ class ConfAE(AE):
         mse = ((recon - x) ** 2).view(len(x), -1).mean(dim=1).mean()
 
         conf_loss = relaxed_distortion_measure(
-            self.decode, z, eta=0.2, metric=self.metric, reg=self.reg_type
+            self.enocode, z, eta=0.2, metric=self.metric, reg=self.reg_type
         )
 
         loss = mse + self.conf_reg * conf_loss
@@ -250,20 +252,24 @@ class GeomAE(AE):
 
     def train_step(self, x, optimizer, **kwargs):
         optimizer.zero_grad()
+        x = x.view(x.shape[0], -1)
         z = self.encode(x)
         recon = self.decode(z)
         mse = ((recon - x) ** 2).view(len(x), -1).mean(dim=1).mean()
 
-        bs = len(z)
-        z_perm = z[torch.randperm(bs)]
-        eta = 0.2
+        bs = len(x)
+        x_perm = x[torch.randperm(bs)]
+
+        eta = None
         if eta is not None:
-            alpha = (torch.rand(bs) * (1 + 2 * eta) - eta).unsqueeze(1).to(z)
-            z_augmented = alpha * z + (1 - alpha) * z_perm
+            alpha = (torch.rand(bs) * (1 + 2 * eta) - eta).unsqueeze(1).to(x).squeeze()
+            x_augmented = alpha * x + (1 - alpha) * x_perm
         else:
+            x_augmented = x
             z_augmented = z
 
-        G = get_pullbacked_Riemannian_metric(self.decode, z_augmented)
+        G = get_pushforwarded_Riemannian_metric(self.encode, x_augmented)
+        # G = get_pullbacked_Riemannian_metric(self.decode, z_augmented)
         logdetG = torch.logdet(G)
         torch.nan_to_num(logdetG, nan=0.0, posinf=0.0, neginf=0.0)
         geom_loss = torch.var(logdetG)
@@ -352,7 +358,7 @@ class IRVAE(VAE):
         nll = -self.decoder.log_likelihood(x, z_sample)
         kl_loss = self.kl_loss(z)
         iso_loss = relaxed_distortion_measure(
-            self.decode, z_sample, eta=0.2, metric=self.metric, reg="iso"
+            self.encode, z_sample, eta=0.2, metric=self.metric, reg="iso"
         )
 
         loss = (nll + kl_loss).mean() + self.iso_reg * iso_loss
@@ -382,7 +388,7 @@ class ConfVAE(VAE):
         nll = -self.decoder.log_likelihood(x, z_sample)
         kl_loss = self.kl_loss(z)
         conf_loss = relaxed_distortion_measure(
-            self.decode, z_sample, eta=0.2, metric=self.metric, reg="conf"
+            self.encode, z_sample, eta=0.2, metric=self.metric, reg="conf"
         )
 
         loss = (nll + kl_loss).mean() + self.conf_reg * conf_loss

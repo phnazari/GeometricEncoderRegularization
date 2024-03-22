@@ -8,6 +8,8 @@ import math
 from matplotlib.patches import Ellipse, Rectangle, Polygon
 from matplotlib import cm
 
+import functorch
+
 from utils.config import Config
 
 config = Config()
@@ -123,7 +125,7 @@ def batch_jacobian(f, input):
     # else:
 
     try:
-        jac = torch.func.vmap(torch.func.jacfwd(f), in_dims=(0,))(input)
+        jac = functorch.vmap(functorch.jacrev(f), in_dims=(0,))(input)
     except NotImplementedError:
         jac = torch.func.vmap(torch.func.jacrev(f), in_dims=(0,))(input)
 
@@ -208,6 +210,8 @@ def get_coordinates(
 
     if num_steps != None:
         num_steps_x = num_steps
+        print(latent_activations)
+        print(latent_activations.shape, num_steps_x, x_max, x_min)
         num_steps_y = math.ceil((y_max - y_min) / (x_max - x_min) * num_steps_x)
 
         step_size_x = (x_max - x_min) / (num_steps_x)

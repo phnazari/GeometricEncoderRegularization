@@ -63,18 +63,29 @@ def get_flattening_scores(G, mode='condition_number'):
 
 
 def jacobian_decoder_jvp_parallel(func, inputs, v=None, create_graph=True):
-    batch_size, z_dim = inputs.size()
+    #batch_size, z_dim = inputs.size()
+    #if v is None:
+    #    v = torch.eye(z_dim).unsqueeze(0).repeat(
+    #        batch_size, 1, 1).view(-1, z_dim).to(inputs)
+    #inputs = inputs.repeat(1, z_dim).view(-1, z_dim)
+    #jac = (
+    #    torch.autograd.functional.jvp(
+    #        func, inputs, v=v, create_graph=create_graph
+    #    )[1].view(batch_size, z_dim, -1).permute(0, 2, 1)
+    #)
+    #return jac
 
-    if v is None:
-        v = torch.eye(z_dim).unsqueeze(0).repeat(
-            batch_size, 1, 1).view(-1, z_dim).to(inputs)
-    inputs = inputs.repeat(1, z_dim).view(-1, z_dim)
-    jac = (
-        torch.autograd.functional.jvp(
-            func, inputs, v=v, create_graph=create_graph
-        )[1].view(batch_size, z_dim, -1).permute(0, 2, 1)
-    )
-    return jac
+    # J = torch.autograd.functional.jacobian(func, inputs, create_graph=True, strict=True, vectorize=False)
+    # return J
+
+    def flattened_immersion(x):
+        recon = func(x)
+        recon = recon.view(recon.shape[0], -1)
+        return recon
+
+    J = batch_jacobian(flattened_immersion, inputs).squeeze()
+
+    return J
 
 
 # cleaner (but slower?) implementation of get_pullbacked_riemannian_metric() and jacobian_decoder_jvp_parallel()
@@ -87,6 +98,12 @@ def get_pullback_metric(func, base_point):
     J = batch_jacobian(flattened_immersion, base_point).squeeze()
     G = torch.einsum('nij, nik->njk', J, J)
 
+    return G
+
+
+def get_pushforwarded_Riemannian_metric(func, z):
+    J = jacobian_decoder_jvp_parallel(func, z, v=None)
+    G = torch.einsum('nij, nkj->nik', J, J)
     return G
 
 
