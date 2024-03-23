@@ -26,7 +26,7 @@ if __name__ == "__main__":
     }
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
-    mode = "latents"  # tradeoff, indicatrix, reg, all, detplot, latents
+    mode = "indicatrix"  # tradeoff, indicatrix, reg, all, detplot, latents
 
     # load results
     if load:

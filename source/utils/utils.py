@@ -145,7 +145,7 @@ def get_sc_kwargs():
 
 
 def get_saving_kwargs():
-    kwargs = {"format": "png", "pad_inches": 0, "dpi": 40}
+    kwargs = {"format": "png", "pad_inches": 0, "dpi": 400}  # 40
 
     return kwargs
 
@@ -178,6 +178,43 @@ def in_hull(p, hull):
 
     return hull.find_simplex(p) >= 0
 
+
+from scipy.spatial import KDTree
+
+def get_nearest_grid_points(data, num_steps=20):
+    """
+    Extracts m x n points from a point cloud that are closest to a regular m x n grid.
+
+    Args:
+    - point_cloud (numpy.ndarray): Array of shape (N, 2) representing the point cloud in R^2.
+    - m (int): Number of rows in the grid.
+    - n (int): Number of columns in the grid.
+
+    Returns:
+    - numpy.ndarray: Array of shape (m * n, 2) containing the extracted points.
+    """
+
+    x_min = torch.min(data[:, 0]).item()
+    x_max = torch.max(data[:, 0]).item()
+    y_min = torch.min(data[:, 1]).item()
+    y_max = torch.max(data[:, 1]).item()
+
+    factor = 0.6
+
+    if num_steps != None:
+        num_steps_x = num_steps
+        num_steps_y = math.ceil((y_max - y_min) / (x_max - x_min) * num_steps_x)
+
+    # Create grid points
+    grid_points = np.array([[i, j] for i in torch.linspace(x_min, x_max, num_steps_x) for j in torch.linspace(y_min, y_max, num_steps_y)])
+
+    # Build KD-tree for efficient nearest neighbor search
+    kdtree = KDTree(data)
+
+    # Query the KD-tree for nearest neighbors to each grid point
+    _, nearest_indices = kdtree.query(grid_points)
+
+    return np.unique(nearest_indices)
 
 def get_coordinates(
     latent_activations,

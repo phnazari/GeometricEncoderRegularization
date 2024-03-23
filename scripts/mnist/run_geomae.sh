@@ -12,9 +12,9 @@
 
 # export GEOMSTATS_BACKEND=pytorch
 
-for seed in 1 2  # 2 3 4 5
+for seed in 1 2 3 4 5
 do
-for reg in 1.0  # 0.1 0.01 0.001 0.0001 0.00001 0.000001
+for reg in 1.0 0.1 0.01 0.001 0.0001 0.00001 0.000001
 do
 python3 source/train.py \
 --base_config configs/mnist/base_config.yml \

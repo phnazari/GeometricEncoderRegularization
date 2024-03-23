@@ -19,6 +19,7 @@ python source/train.py \
 --config configs/mnist/irae.yml \
 --logdir results2/mnist_z2 \
 --run irae_reg${reg}_seed${seed} \
---model.iso_reg ${reg}
+--model.iso_reg ${reg} \
+--device cpu
 done
 done

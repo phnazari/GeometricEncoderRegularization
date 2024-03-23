@@ -19,6 +19,7 @@ python3 source/train.py \
 --config configs/pbmc/geomae.yml \
 --logdir results2/pbmc_z2 \
 --run geomae_reg${reg}_seed${seed} \
---model.geom_reg ${reg}
+--model.geom_reg ${reg} \
+--device cpu
 done
 done

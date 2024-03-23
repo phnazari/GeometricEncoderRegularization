@@ -37,7 +37,7 @@ data:
     shuffle: True
 trainer: base
 training:
-  n_epoch: 300
+  n_epoch: 2
   optimizer:
     name: 'adam'
     lr: 0.0005

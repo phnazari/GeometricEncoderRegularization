@@ -24,6 +24,7 @@ from utils.utils import (
     get_saving_dir,
     get_coordinates,
     generate_unit_vectors,
+    get_nearest_grid_points
 )
 
 
@@ -226,13 +227,18 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     if reg == "":
         reg = 0
 
-    coordinates = get_coordinates(
-        data.view(data.shape[0], -1),
-        grid="on_data",
-        num_steps=15,
-        dataset_name=dataset_name,
-        model_name=model_name,
-    ).to(config["device"])
+    coordinate_idx = get_nearest_grid_points(Z, num_steps=8)
+
+    latent_coordinates = Z[coordinate_idx].to(config["device"])
+    data_coordinates = data[coordinate_idx].to(config["device"])
+
+    #coordinates = get_coordinates(
+    #    data.view(data.shape[0], -1),
+    #    grid="on_data",
+    #    num_steps=15,
+    #    dataset_name=dataset_name,
+    #    model_name=model_name,
+    #).to(config["device"])
 
     # calculate grid step sizes
     x_min = torch.min(Z[:, 0]).item()
@@ -248,9 +254,9 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     stepsize = min(step_size_x, step_size_y)
 
     # Z_pinned_data = model.encode(pinned_data)
-    G = get_pushforwarded_Riemannian_metric(model.encode, coordinates)
+    G = get_pushforwarded_Riemannian_metric(model.encode, data_coordinates.view(data_coordinates.shape[0], -1))
 
-    vector_patches, _ = generate_unit_vectors(100, coordinates, G)
+    vector_patches, _ = generate_unit_vectors(100, data_coordinates, G)
     vector_norms = torch.linalg.norm(vector_patches.reshape(-1, 2), dim=1)
     max_vector_norm = torch.max(vector_norms[torch.nonzero(vector_norms)])
 
@@ -258,7 +264,7 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
         vector_patches / max_vector_norm * stepsize / 2
     )  # * scaling_factor  # / 3
     anchored_vector_patches = (
-        coordinates.unsqueeze(1).expand(*normed_vector_patches.shape)
+        latent_coordinates.unsqueeze(1).expand(*normed_vector_patches.shape)
         + normed_vector_patches
     )
 

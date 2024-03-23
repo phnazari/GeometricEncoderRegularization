@@ -21,6 +21,7 @@ python source/train.py \
 --run confae-log_reg${reg}_seed${seed} \
 --model.conf_reg ${reg} \
 --training.seed ${seed} \
---model.reg_type conf-log
+--model.reg_type conf-log \
+--device cpu
 done
 done

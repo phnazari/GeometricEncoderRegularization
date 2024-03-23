@@ -10,12 +10,12 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2  # 3 4 5
+for seed in 1 2 3 4 5
 do
 python3 source/train.py \
 --base_config configs/mnist/base_config.yml \
 --config configs/mnist/ae.yml \
 --logdir results2/mnist_z2 \
 --run ae_seed${seed} \
---device 2
+--device cpu
 done

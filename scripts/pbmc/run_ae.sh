@@ -16,5 +16,6 @@ python source/train.py \
 --base_config configs/pbmc/base_config.yml \
 --config configs/pbmc/ae.yml \
 --logdir results2/pbmc_z2 \
---run ae_seed${seed}
+--run ae_seed${seed} \
+--device cpu
 done

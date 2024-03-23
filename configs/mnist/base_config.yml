@@ -39,7 +39,7 @@ data:
     digits: 'all'
 trainer: base
 training:
-  n_epoch: 5
+  n_epoch: 100
   optimizer:
     name: 'adam'
     lr: 0.0005

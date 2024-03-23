@@ -211,7 +211,7 @@ class IRAE(AE):
         mse = ((recon - x) ** 2).view(len(x), -1).mean(dim=1).mean()
 
         iso_loss = relaxed_distortion_measure(
-            self.encode, z, eta=0.2, metric=self.metric, reg="iso"
+            self.encode, x.view(x.shape[0], -1), eta=None, metric=self.metric, reg="iso"
         )
 
         loss = mse + self.iso_reg * iso_loss
@@ -235,7 +235,7 @@ class ConfAE(AE):
         mse = ((recon - x) ** 2).view(len(x), -1).mean(dim=1).mean()
 
         conf_loss = relaxed_distortion_measure(
-            self.enocode, z, eta=0.2, metric=self.metric, reg=self.reg_type
+            self.encode, x.view(x.shape[0], -1), eta=0.2, metric=self.metric, reg=self.reg_type
         )
 
         loss = mse + self.conf_reg * conf_loss

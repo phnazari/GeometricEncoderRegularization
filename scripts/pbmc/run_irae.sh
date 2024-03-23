@@ -19,6 +19,7 @@ python source/train.py \
 --config configs/pbmc/irae.yml \
 --logdir results2/pbmc_z2 \
 --run irae_reg${reg}_seed${seed} \
---model.iso_reg ${reg}
+--model.iso_reg ${reg} \
+--device cpu
 done
 done

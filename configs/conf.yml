@@ -1,7 +1,7 @@
 device: cpu
 seeds: [1, 2]  # , 2, 3, 4, 5]
 models: [
-    #"confae-log",
+    "confae-log",
     "geomae",
     #"irae",
     "ae",
