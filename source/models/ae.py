@@ -144,7 +144,7 @@ class AE(nn.Module):
         for label in label_unique:
             temp_data = dl.dataset.data[dl.dataset.targets == label][
                 :num_points_for_each_class
-            ]
+            ].to(device)
             temp_z = self.encode(temp_data.to(device))
             z_sampled = temp_z[torch.randperm(len(temp_z))[:num_G_plots_for_each_class]]
             x_sampled = temp_data[torch.randperm(len(temp_data))[:num_G_plots_for_each_class]]

@@ -1,17 +1,17 @@
 device: cpu
-seeds: [1, 2]  # , 2, 3, 4, 5]
+seeds: [1, 2, 3]  # , 2, 3, 4, 5]
 models: [
     "confae-log",
     "geomae",
-    #"irae",
+    "irae",
     "ae",
 ]
 metrics: ["CN", "voR", "VP"]
 datasets: [
-    #"celegans",
-    #"zilionis",
-    #"pbmc",
-    #"earth",
+    "celegans",
+    "zilionis",
+    "pbmc",
+    "earth",
     "mnist",
 ]
 METRIC_FOR_MODEL: 

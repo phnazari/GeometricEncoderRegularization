@@ -97,7 +97,7 @@ def get_best_model(dataset, results, method="other"):
             model_regs.append((model, regs[np.argmin(graph_norm)]))
         else:
             # get the last value that is at most 1.1 times the vanilla mse
-            idx = np.where(xs <= 10)[0][0]
+            idx = np.where(xs <= 1.3)[0][0]
 
             model_regs.append((model, regs[idx]))
 
@@ -108,10 +108,10 @@ def reg_strength_data(model, dataset, metric, results):
     result = results[dataset][model]
     regs = list(result.keys())
 
-    for reg in regs:
-        print(result[reg].keys())
-        print(metric)
-        print("\n")
+    #for reg in regs:
+    #    print(result[reg].keys())
+    #    print(metric)
+    #    print("\n")
 
     vals = np.array([result[reg][f"{metric}_"] for reg in regs])
     std_vals = np.std(vals, axis=1)

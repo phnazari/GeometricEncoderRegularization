@@ -10,11 +10,12 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 python3 source/train.py \
 --base_config configs/earth/base_config.yml \
 --config configs/earth/topoae.yml \
 --logdir results2/earth_z2 \
---run topoae_reg_seed${seed}
+--run topoae_reg_seed${seed} \
+--decive $1
 done

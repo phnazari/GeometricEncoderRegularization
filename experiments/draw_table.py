@@ -50,10 +50,10 @@ used_metrics = [
 
 with_std = True
 
-datasets = ["earth", "mnist", "celegans", "zilionis", "pbmc"]
+datasets = config["datasets"]
 
 models = [
-    ("irae", "IsoAE"),
+    ("irae", "IRAE"),
     ("geomae", "GeomAE"),
     ("confae-log", "ConfAE"),
     ("ae", "VanillaAE"),

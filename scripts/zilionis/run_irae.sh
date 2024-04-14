@@ -10,7 +10,7 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 for reg in 10 1.0 0.1 0.01 0.001 0.0001 0.00001
 do
@@ -19,6 +19,7 @@ python source/train.py \
 --config configs/zilionis/irae.yml \
 --logdir results2/zilionis_z2 \
 --run irae_reg${reg}_seed${seed} \
---model.iso_reg ${reg}
+--model.iso_reg ${reg} \
+--decive $1
 done
 done

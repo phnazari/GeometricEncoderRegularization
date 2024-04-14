@@ -10,12 +10,12 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 python source/train.py \
 --base_config configs/pbmc/base_config.yml \
 --config configs/pbmc/ae.yml \
 --logdir results2/pbmc_z2 \
 --run ae_seed${seed} \
---device cpu
+--decive $1
 done

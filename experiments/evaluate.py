@@ -17,24 +17,33 @@ from utils.config import Config
 config = Config()
 
 if __name__ == "__main__":
-    results = {
-        "mnist": dict(),
-        #"earth": dict(),
-        #"celegans": dict(),
-        #"zilionis": dict(),
-        #"pbmc": dict(),
-    }
+    results = {}
+    for dataset in config["datasets"]:
+        results[dataset] = dict()
+
+    #results = {
+    #    "mnist": dict(),
+    #    #"earth": dict(),
+    #    #"celegans": dict(),
+    #    #"zilionis": dict(),
+    #    #"pbmc": dict(),
+    #}
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
-    mode = "indicatrix"  # tradeoff, indicatrix, reg, all, detplot, latents
+    mode = "indicatrix"  # tradeoff, indicatrix, reg, detplot, latents
 
     # load results
     if load:
         results = np.load(
             os.path.join(config["output_path"], "results.npy"), allow_pickle=True
-        ).item()
+        ).item()   
     else:
-        # results = np.load(f"../output/results.npy", allow_pickle=True).item()
+        #results = np.load(
+        #    os.path.join(config["output_path"], "results.npy"), allow_pickle=True
+        #).item()
+        #for dataset in config["datasets"]:
+        #    results[dataset] = dict()
+
         i = 0
         for dataset in config["datasets"]:
             # results[dataset] = dict()

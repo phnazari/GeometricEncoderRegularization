@@ -145,7 +145,7 @@ def get_sc_kwargs():
 
 
 def get_saving_kwargs():
-    kwargs = {"format": "png", "pad_inches": 0, "dpi": 400}  # 40
+    kwargs = {"format": "png", "pad_inches": 0, "dpi": 100}  # 40
 
     return kwargs
 

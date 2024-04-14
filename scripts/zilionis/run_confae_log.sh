@@ -10,7 +10,7 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 for reg in 0.1 0.01 0.001 0.0001 0.00001 0.000001 0.0000001
 do
@@ -21,6 +21,7 @@ python source/train.py \
 --run confae-log_reg${reg}_seed${seed} \
 --model.conf_reg ${reg} \
 --training.seed ${seed} \
---model.reg_type conf-log
+--model.reg_type conf-log \
+--decive $1
 done
 done

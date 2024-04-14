@@ -10,7 +10,7 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 for reg in 1.0 0.1 0.01 0.001 0.0001 0.00001 0.000001
 do
@@ -20,6 +20,6 @@ python3 source/train.py \
 --logdir results2/pbmc_z2 \
 --run geomae_reg${reg}_seed${seed} \
 --model.geom_reg ${reg} \
---device cpu
+--decive $1
 done
 done

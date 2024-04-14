@@ -10,11 +10,12 @@
 #SBATCH --output %j.out
 #SBATCH --error %j.err
 
-for seed in 1 2 3 4 5
+for seed in 1 2 3
 do
 python source/train.py \
 --base_config configs/zilionis/base_config.yml \
 --config configs/zilionis/ae.yml \
 --logdir results2/zilionis_z2 \
---run ae_seed${seed}
+--run ae_seed${seed} \
+--decive $1
 done

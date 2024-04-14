@@ -1,7 +1,11 @@
-for model in 'geomae' 'ae' 'confae_log' 'irae'  # topoae
+#!/bin/bash
+
+gpu=2
+
+for model in 'confae_log'   # 'geomae'  # 'irae' 'geomae' 'ae' # topoae
 do 
-for dataset in 'zilionis' 'pbmc' 'celegans' 'mnist' 'earth'
+for dataset in 'celegans' 'pbmc'   # 'zilionis' 'pbmc'  'mnist' 'earth'
 do
-sbatch scripts/${dataset}/run_${model}.sh
+bash scripts/${dataset}/run_${model}.sh $gpu
 done
 done

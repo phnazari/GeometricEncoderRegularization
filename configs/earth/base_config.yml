@@ -39,7 +39,7 @@ data:
     filename: 'datasets/EARTH/landmass.pt'
 trainer: base
 training:
-  n_epoch: 300
+  n_epoch: 100
   optimizer:
     name: 'adam'
     lr: 0.0005
