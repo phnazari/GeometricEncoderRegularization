@@ -8,7 +8,7 @@ from matplotlib.collections import PatchCollection
 from experiments.util import generate_tradeoff_data, get_dl, normalize
 
 from models import load_pretrained
-from geometry import get_pullbacked_Riemannian_metric, get_pushforwarded_Riemannian_metric
+from geometry import get_pullbacked_Riemannian_metric, get_pushforwarded_Riemannian_metric, get_Riemannian_metric
 
 from experiments.util import (
     load_model,
@@ -254,9 +254,18 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     stepsize = min(step_size_x, step_size_y)
 
     # Z_pinned_data = model.encode(pinned_data)
-    G = get_pushforwarded_Riemannian_metric(model.encode, data_coordinates.view(data_coordinates.shape[0], -1))
+    # G = get_pushforwarded_Riemannian_metric(model.encode, data_coordinates.view(data_coordinates.shape[0], -1))
+    
+    if config["part_of_ae"]["vis"] == "encoder":
+        model = model.encode
+        points = data_coordinates
+    elif config["part_of_ae"]["vis"] == "decoder":
+        model = model.decode
+        points = latent_coordinates
 
-    vector_patches, _ = generate_unit_vectors(100, data_coordinates, G)
+    G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis")
+
+    vector_patches, _ = generate_unit_vectors(100, points, G)
     vector_norms = torch.linalg.norm(vector_patches.reshape(-1, 2), dim=1)
     max_vector_norm = torch.max(vector_norms[torch.nonzero(vector_norms)])
 
@@ -272,7 +281,13 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     polygons = PatchCollection(
         [Polygon(tuple(vector.tolist()), True) for vector in anchored_vector_patches]
     )
-    polygons.set_color([0 / 255, 0 / 255, 0 / 255, 0.3])
+
+    if config["part_of_ae"]["vis"] == "decoder":
+        polygons.set_color([12 / 255, 0 / 255, 55 / 255, 0.3])  # decoder: blue
+    elif config["part_of_ae"]["vis"] == "encoder":
+        polygons.set_color([55 / 255, 0 / 255, 17 / 255, 0.3])  # encoder: red
+    else:
+        raise NotImplementedError
 
     fig, ax = plt.subplots(figsize=(5, 5))
 
@@ -383,7 +398,7 @@ def determinants_plot(
     grid="dataset",
     num_steps=15,
 ):
-    print(f"[Analyse] determinants of {model_name} on {dataset_name}...")
+    print(f"[Analyze] determinants of {model_name} on {dataset_name}...")
 
     if reg == "":
         reg = 0
@@ -394,26 +409,38 @@ def determinants_plot(
 
     generator = torch.Generator().manual_seed(0)
     perm = torch.randperm(data.shape[0], generator=generator)
-    data = data[perm]
-    latent_activations = latent_activations[perm]
 
-    #coordinates = get_coordinates(
-    #    torch.squeeze(data.view(data.shape[0], -1)), grid=grid, num_steps=num_steps
-    #)
-
-    coordinates = latent_activations
-
-    # initialize diffgeo objects
+    data = data[perm]  # [:num_data]
+    latent_activations = latent_activations[perm]  # [:num_data]
 
     # batch-size is negative use the whole batch, i.e. don't batch. Need to batch for storage reasons
     if batch_size == -1:
-        batch_size = coordinates.shape[0]
+        batch_size = latent_activations.shape[0]
+
+    if config["part_of_ae"]["vis"] == "encoder":
+        model = model.encode
+        points = data
+    elif config["part_of_ae"]["vis"] == "decoder":
+        model = model.decode
+        points = latent_activations
+
+    #G = []
+    #num_data = 100
+    #for i in range(0, points.shape[0], num_data):
+    #    print(i)
+    #    batch = points[i:i+num_data]
+    #    G_new = get_Riemannian_metric(model, batch.view(batch.shape[0], -1), "vis")
+    #    G.append(G_new)
+    #G = torch.cat(G)
+
+    G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis")
 
     # calculate determinants
-    G = get_pushforwarded_Riemannian_metric(model.encode, data.view(data.shape[0], -1))
+    # G = get_pushforwarded_Riemannian_metric(model.encode, data.view(data.shape[0], -1))
+    
     determinants = torch.det(
         G
-    ).sqrt()  # TODO: check if this is done along the correct dimension
+    ).sqrt()
 
     # collapse determinants into quantile
     middle_idx = values_in_quantile(determinants, quantile)
@@ -435,7 +462,7 @@ def determinants_plot(
     # remove nan scaled determinants
     nonnan_idx = torch.argwhere(~torch.isnan(dets_scaled_raw)).squeeze()
     dets_scaled_raw = dets_scaled_raw[nonnan_idx]
-    coordinates = coordinates[nonnan_idx]
+    latent_activations = latent_activations[nonnan_idx]
 
     # dets_scaled[torch.isinf(dets_scaled)] = -44
 
@@ -450,7 +477,7 @@ def determinants_plot(
     PLOTTING
     """
 
-    coordinates = coordinates.detach().cpu()
+    latent_activations = latent_activations.detach().cpu()
     dets_scaled = dets_scaled.detach().cpu()
 
     # plot color-coded determinants
@@ -468,8 +495,8 @@ def determinants_plot(
         dets_scaled += 2
 
     scatter = ax.scatter(
-        coordinates[:, 0],
-        coordinates[:, 1],
+        latent_activations[:, 0],
+        latent_activations[:, 1],
         c=dets_scaled,
         cmap=cmap,
         **get_sc_kwargs(),

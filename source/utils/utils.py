@@ -106,7 +106,7 @@ def cmap_labels(labels, cmap=cm.turbo):
     return new_labels
 
 
-def batch_jacobian(f, input):
+def batch_jacobian(f, input, mode):
     """
     Compute the diagonal entries of the jacobian of f with respect to x
     :param f: the function
@@ -124,10 +124,17 @@ def batch_jacobian(f, input):
 
     # else:
 
-    try:
+    if mode == "rev":
         jac = functorch.vmap(functorch.jacrev(f), in_dims=(0,))(input)
-    except NotImplementedError:
-        jac = torch.func.vmap(torch.func.jacrev(f), in_dims=(0,))(input)
+    elif mode == "fwd":
+        jac = functorch.vmap(functorch.jacfwd(f), in_dims=(0,))(input)
+    else:
+        raise NotImplementedError
+
+    # try:
+    #     jac = functorch.vmap(functorch.jacrev(f), in_dims=(0,))(input)
+    # except NotImplementedError:
+    #     jac = torch.func.vmap(torch.func.jacrev(f), in_dims=(0,))(input)
 
     return jac
 
@@ -151,7 +158,7 @@ def get_saving_kwargs():
 
 
 def get_saving_dir(model_name, dataset_name, filename):
-    root = Path(os.path.join(config["output_path"], dataset_name, model_name))
+    root = Path(os.path.join(config["output_path"], config["part_of_ae"]["vis"], dataset_name, model_name))
     root.mkdir(parents=True, exist_ok=True)
     return os.path.join(root.resolve(), filename)
 

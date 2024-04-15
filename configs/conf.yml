@@ -1,19 +1,24 @@
 device: cpu
+
 seeds: [1, 2, 3]  # , 2, 3, 4, 5]
+
 models: [
     "confae-log",
     "geomae",
     "irae",
     "ae",
 ]
+
 metrics: ["CN", "voR", "VP"]
+
 datasets: [
-    "celegans",
+    "mnist",
     "zilionis",
     "pbmc",
     "earth",
-    "mnist",
+    "celegans",
 ]
+
 METRIC_FOR_MODEL: 
   confae-log: CN
   geomae: VP
@@ -28,3 +33,7 @@ data_path: "/local/home/pnazari/workspace/SemesterProject/datasets"
 show: False
 
 type_of_mse: "mse"  # in mse and train_mse
+
+part_of_ae:
+  reg: "encoder"
+  vis: "encoder"

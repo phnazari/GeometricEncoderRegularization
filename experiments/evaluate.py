@@ -30,7 +30,7 @@ if __name__ == "__main__":
     #}
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
-    mode = "indicatrix"  # tradeoff, indicatrix, reg, detplot, latents
+    mode = "latents"  # tradeoff, indicatrix, reg, detplot, latents
 
     # load results
     if load:
@@ -78,10 +78,10 @@ if __name__ == "__main__":
 
     elif mode == "detplot":
         for dataset in config["datasets"]:
-            for model in config["models"]:
-                determinants_plots(dataset, get_best_model(dataset, results))
+            # for model in config["models"]:
+            determinants_plots(dataset, get_best_model(dataset, results))
 
     elif mode == "latents":
         for dataset in config["datasets"]:
-            for model in config["models"]:
-                latent_plots(dataset, get_best_model(dataset, results))
+            # for model in config["models"]:
+            latent_plots(dataset, get_best_model(dataset, results))

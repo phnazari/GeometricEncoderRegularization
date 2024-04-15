@@ -2,6 +2,9 @@ import torch
 import copy
 
 from utils.utils import batch_jacobian
+from utils.config import Config
+
+config = Config()
 
 
 def relaxed_distortion_measure(func, z, eta=0.2, metric='identity', create_graph=True, reg="iso"):
@@ -35,7 +38,7 @@ def relaxed_distortion_measure(func, z, eta=0.2, metric='identity', create_graph
             else:
                 raise NotImplementedError
         elif reg in ["conf-noapprox"]:
-            J = jacobian_decoder_jvp_parallel(func, z_augmented)
+            J = jacobian_parallel(func, z_augmented)
             JTJ = torch.einsum('nij, nik -> njk', J, J)
             TrG2 = torch.einsum('nii -> n', JTJ@JTJ)
             TrG = torch.einsum('nii -> n', JTJ)
@@ -62,7 +65,7 @@ def get_flattening_scores(G, mode='condition_number'):
     return scores
 
 
-def jacobian_decoder_jvp_parallel(func, inputs, v=None, create_graph=True):
+def jacobian_parallel(func, inputs, v=None, create_graph=True, mode="rev"):
     #batch_size, z_dim = inputs.size()
     #if v is None:
     #    v = torch.eye(z_dim).unsqueeze(0).repeat(
@@ -83,31 +86,30 @@ def jacobian_decoder_jvp_parallel(func, inputs, v=None, create_graph=True):
         recon = recon.view(recon.shape[0], -1)
         return recon
 
-    J = batch_jacobian(flattened_immersion, inputs).squeeze()
+    J = batch_jacobian(flattened_immersion, inputs, mode).squeeze()
 
     return J
 
 
-# cleaner (but slower?) implementation of get_pullbacked_riemannian_metric() and jacobian_decoder_jvp_parallel()
-def get_pullback_metric(func, base_point):
-    def flattened_immersion(x):
-        recon = func(x)
-        recon = recon.view(recon.shape[0], -1)
-        return recon
-
-    J = batch_jacobian(flattened_immersion, base_point).squeeze()
-    G = torch.einsum('nij, nik->njk', J, J)
-
-    return G
-
-
 def get_pushforwarded_Riemannian_metric(func, z):
-    J = jacobian_decoder_jvp_parallel(func, z, v=None)
+    J = jacobian_parallel(func, z, v=None, mode="rev")
     G = torch.einsum('nij, nkj->nik', J, J)
     return G
 
 
-def get_pullbacked_Riemannian_metric(func, z):
-    J = jacobian_decoder_jvp_parallel(func, z, v=None)
+def get_pullbacked_Riemannian_metric(func, z, mode="fwd"):
+    J = jacobian_parallel(func, z, v=None, mode="fwd")
     G = torch.einsum('nij, nik->njk', J, J)
     return G
+
+
+def get_Riemannian_metric(func, z, purpose):
+    if purpose not in ["vis", "reg"]:
+        raise NotImplementedError
+
+    if config["part_of_ae"][purpose] == "encoder":
+        return get_pushforwarded_Riemannian_metric(func, z)
+    elif config["part_of_ae"][purpose] == "decoder":
+        return get_pullbacked_Riemannian_metric(func, z)
+    else:
+        raise NotImplementedError

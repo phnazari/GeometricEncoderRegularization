@@ -9,10 +9,8 @@ from evaluation.eval import Multi_Evaluation
 
 from geometry import (
     relaxed_distortion_measure,
-    get_pullbacked_Riemannian_metric,
     get_pushforwarded_Riemannian_metric,
     get_flattening_scores,
-    get_pullback_metric,
 )
 
 
