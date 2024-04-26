@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import torch
 
-from utils.utils import round_significant
+from utils.utils import round_significant, get_output_dir
 from utils.config import Config
 
 from experiments.util import get_best_model
@@ -65,7 +65,7 @@ ranked_tables = np.empty((len(datasets), len(models), len(metrics)), dtype=float
 
 # metrics_dir = "metrics1.25"
 
-results = np.load(os.path.join(config["output_path"], "results.npy"), allow_pickle=True).item()
+results = np.load(os.path.join(get_output_dir(), "results.npy"), allow_pickle=True).item()
 
 for dataset in datasets:
     # Load the dictionary from the file
@@ -124,7 +124,7 @@ for dataset in datasets:
 
     # Save dataframe to latex file
     with open(
-        os.path.join(config["output_path"], f"latex/table_{dataset}.tex"), "w"
+        os.path.join(get_output_dir(), f"latex/table_{dataset}.tex"), "w"
     ) as f:
         f.write(df.to_latex(index=True))
 
@@ -162,5 +162,5 @@ df = pd.DataFrame(mean_ranked_tables.astype(str), columns=collabels, index=rowla
 print(df)
 
 # Save dataframe to latex file
-with open(os.path.join(config["output_path"], f"latex/table_aggregated.tex"), "w") as f:
+with open(os.path.join(get_output_dir(), f"latex/table_aggregated.tex"), "w") as f:
     f.write(df.to_latex(index=True))

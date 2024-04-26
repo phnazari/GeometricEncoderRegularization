@@ -13,6 +13,8 @@ from experiments.plots import (
 )
 
 from utils.config import Config
+from utils.utils import get_output_dir
+
 
 config = Config()
 
@@ -30,16 +32,16 @@ if __name__ == "__main__":
     #}
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
-    mode = "latents"  # tradeoff, indicatrix, reg, detplot, latents
+    mode = "indicatrix"  # tradeoff, indicatrix, reg, detplot, latents
 
     # load results
     if load:
         results = np.load(
-            os.path.join(config["output_path"], "results.npy"), allow_pickle=True
-        ).item()   
+            os.path.join(get_output_dir(), "results.npy"), allow_pickle=True
+        ).item()
     else:
         #results = np.load(
-        #    os.path.join(config["output_path"], "results.npy"), allow_pickle=True
+        #    os.path.join(get_output_dir(), "results.npy"), allow_pickle=True
         #).item()
         #for dataset in config["datasets"]:
         #    results[dataset] = dict()
@@ -58,7 +60,7 @@ if __name__ == "__main__":
                 i += 1
 
         # save results to file
-        np.save(os.path.join(config["output_path"], "results.npy"), results)
+        np.save(os.path.join(get_output_dir(), "results.npy"), results)
 
     # tradeoff plots
     if mode == "tradeoff":

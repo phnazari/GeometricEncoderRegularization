@@ -157,8 +157,20 @@ def get_saving_kwargs():
     return kwargs
 
 
+def get_results_dir(dataset_name):
+    return os.path.join(config["results_path"], config["part_of_ae"]["reg"], f"{dataset_name}_z2/")
+
+
+def get_output_dir():
+    return os.path.join(config["output_path"], config["part_of_ae"]["reg"])
+
+
 def get_saving_dir(model_name, dataset_name, filename):
-    root = Path(os.path.join(config["output_path"], config["part_of_ae"]["vis"], dataset_name, model_name))
+    root = Path(os.path.join(get_output_dir(),
+                             config["part_of_ae"]["vis"],
+                             dataset_name,
+                             model_name))
+
     root.mkdir(parents=True, exist_ok=True)
     return os.path.join(root.resolve(), filename)
 

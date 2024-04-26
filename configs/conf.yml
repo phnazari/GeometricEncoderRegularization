@@ -35,5 +35,5 @@ show: False
 type_of_mse: "mse"  # in mse and train_mse
 
 part_of_ae:
-  reg: "encoder"
-  vis: "encoder"
+  reg: "decoder"
+  vis: "decoder"

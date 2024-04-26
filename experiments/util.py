@@ -5,12 +5,13 @@ import torch
 from loader import get_dataloader
 from models import load_pretrained
 from utils.config import Config
+from utils.utils import get_results_dir
 
 config = Config()
 
 
 def save_all_results(model_name, dataset_name):
-    root = os.path.join(config["results_path"], f"{dataset_name}_z2/")
+    root = get_results_dir(dataset_name)
 
     loaded_data = False
 
@@ -160,7 +161,7 @@ def load_model(model_name, dataset_name, seed, reg):
         identifier = f"{model_name}_reg{reg}_seed{seed}"
 
     model, cfg = load_pretrained(
-        root=os.path.join(config["results_path"], f"{dataset_name}_z2/seed{seed}/"),
+        root=os.path.join(get_results_dir(dataset_name), f"seed{seed}/"),
         identifier=identifier,
         ckpt_file="model_best.pkl",
         config_file=f"{model_name_2}.yml",
