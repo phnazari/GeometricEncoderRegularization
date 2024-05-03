@@ -152,7 +152,7 @@ def generate_tradeoff_data(result, metric):
     return mean_mses, mean_vals, std_mses, std_vals, np.array(regs)[idx]
 
 
-def load_model(model_name, dataset_name, seed, reg):
+def load_model(model_name, dataset_name, seed, reg, reg_part=None):
     model_name_2 = model_name.split("-")[0]
 
     if model_name_2 == "ae":
@@ -161,7 +161,7 @@ def load_model(model_name, dataset_name, seed, reg):
         identifier = f"{model_name}_reg{reg}_seed{seed}"
 
     model, cfg = load_pretrained(
-        root=os.path.join(get_results_dir(dataset_name), f"seed{seed}/"),
+        root=os.path.join(get_results_dir(dataset_name, reg_part=reg_part), f"seed{seed}/"),
         identifier=identifier,
         ckpt_file="model_best.pkl",
         config_file=f"{model_name_2}.yml",

@@ -51,7 +51,7 @@ def relaxed_distortion_measure(func, z, eta=0.2, metric='identity', create_graph
 def get_flattening_scores(G, mode='condition_number'):
     if mode == 'condition_number':
         S = torch.svd(G).S
-        scores = S.max(1).values/S.min(1).values
+        scores = S.max(1).values/S.min(1).values - 1  # condition number & added the -1
     elif mode == 'variance':
         G_mean = torch.mean(G, dim=0, keepdim=True)
         A = torch.inverse(G_mean)@G
@@ -103,13 +103,16 @@ def get_pullbacked_Riemannian_metric(func, z, mode="fwd"):
     return G
 
 
-def get_Riemannian_metric(func, z, purpose):
+def get_Riemannian_metric(func, z, purpose, purpose_part=None):
     if purpose not in ["vis", "reg"]:
         raise NotImplementedError
+    
+    if purpose_part is None:
+        purpose_part = config["part_of_ae"][purpose]
 
-    if config["part_of_ae"][purpose] == "encoder":
+    if purpose_part == "encoder":
         return get_pushforwarded_Riemannian_metric(func, z)
-    elif config["part_of_ae"][purpose] == "decoder":
+    elif purpose_part == "decoder":
         return get_pullbacked_Riemannian_metric(func, z)
     else:
         raise NotImplementedError
