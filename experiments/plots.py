@@ -266,8 +266,9 @@ def cn_table(dataset_name, model_regs):
 
                     G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis", purpose_part=vis_part)
                     
-                    G = (G) / torch.std(G.view(len(G), 4), dim=1)[:, None, None]  #  - torch.mean(G.view(len(G), 4), dim=1)[:, None, None]
+                    # G = (G) / torch.std(G.view(len(G), 4), dim=1)[:, None, None]  #  - torch.mean(G.view(len(G), 4), dim=1)[:, None, None]
 
+                    """
                     if model_name == "confae-log":
                         metric_mode = "condition_number"
                     elif model_name == "geomae":
@@ -276,11 +277,32 @@ def cn_table(dataset_name, model_regs):
                         metric_mode = "variance"
 
                     metric = get_flattening_scores(G, mode=metric_mode)
+                    """
 
-                    metric = metric[values_in_quantile(metric, 0.90)]
+                    if model_name == "confae-log":
+                        S = torch.svd(G).S
+                        metric_inp = 1 - S.min(1).values/S.max(1).values  # inverted condition number -1
+                        metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
+                        metric = torch.mean(metric_inp)
+                    elif model_name == "geomae":
+                        Slog = torch.log(torch.svd(G).S)
+                        # metric_inp = torch.log(torch.clip(torch.det(G), min=1.0e-8))
+                        metric_inp = Slog.sum(1)
+                        #if reg_part == "encoder" and vis_part == "decoder":
+                        #    print(metric_inp)
+                        metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
+                        metric = torch.std(metric_inp)
+                    elif model_name == "irae":
+                        S = torch.svd(G).S
+                        metric_inp = torch.log(S).sum(1)
+                        metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
+                        metric = torch.std(metric_inp)
+
+                    # metric = metric[values_in_quantile(metric, 0.90)]
 
                     tmp = result[model_name][reg_part][vis_part]
-                    result[model_name][reg_part][vis_part] = torch.cat((tmp, metric))
+                    result[model_name][reg_part][vis_part] = torch.cat((tmp, metric.reshape(1)))
+                    # result[model_name][reg_part][vis_part].append(metric)
 
         print(f"seed {seed} done.")
 
@@ -301,13 +323,10 @@ def cn_table(dataset_name, model_regs):
 
         for reg_part in ["encoder", "decoder"]:
             for vis_part in ["encoder", "decoder"]:
-                mean_result[model_name][reg_part][vis_part] = torch.mean(result[model_name][reg_part][vis_part]).item()
-                std_result[model_name][reg_part][vis_part] = torch.std(result[model_name][reg_part][vis_part]).item()
-
-                # compute mean over seeds
-
-                # result[model_name][reg_part][vis_part] = np.array(result[model_name][reg_part][vis_part])
-
+                #mean_result[model_name][reg_part][vis_part] = torch.mean(result[model_name][reg_part][vis_part]).item()
+                #std_result[model_name][reg_part][vis_part] = torch.std(result[model_name][reg_part][vis_part]).item()
+                mean_result[model_name][reg_part][vis_part] = torch.mean(torch.tensor(result[model_name][reg_part][vis_part])).item()
+                std_result[model_name][reg_part][vis_part] = torch.std(torch.tensor(result[model_name][reg_part][vis_part])).item()
 
     print(mean_result)
     print(std_result)
