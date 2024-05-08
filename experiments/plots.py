@@ -9,7 +9,7 @@ import pandas as pd
 
 
 from experiments.util import generate_tradeoff_data, get_dl, normalize
-from utils.utils import random_metric_field_generator, get_output_dir
+from utils.utils import random_metric_field_generator, get_output_dir, round_significant
 
 from models import load_pretrained
 from geometry import get_flattening_scores, get_Riemannian_metric
@@ -223,94 +223,128 @@ def latent_plots(dataset_name, model_regs):
 
 
 def cn_table(dataset_name, model_regs):
-    seed = 1
+
+    # TODO: 
+    # average over all three seeds
+    # create plot for all datasets
 
     result = {}
     for name in config["models"]:
         result[name] = dict()
 
-    for model_name, reg in model_regs:
+
+
+    for seed in config["seeds"]:
+        for model_name, reg in model_regs:
+            if model_name == "ae":
+                continue
+
+            if seed == 1:
+                result[model_name] = {"encoder": {"encoder": torch.tensor([]), "decoder": torch.tensor([])},
+                                    "decoder": {"encoder": torch.tensor([]), "decoder": torch.tensor([])}}
+
+            for reg_part in ["encoder", "decoder"]:
+                raw_model, cfg = load_model(model_name, dataset_name, seed, reg, reg_part=reg_part)
+                train_dl = get_dl(cfg, dataset_name, split="train")
+                test_dl = get_dl(cfg, dataset_name)
+
+                data = torch.cat((test_dl.dataset.data, train_dl.dataset.data))
+                # targets = torch.cat((test_dl.dataset.targets, train_dl.dataset.targets))
+                Z = raw_model.encode(data).detach().cpu()
+
+                for vis_part in ["encoder", "decoder"]:
+                    coordinate_idx = get_nearest_grid_points(Z, num_steps=64)
+                    latent_coordinates = Z[coordinate_idx].to(config["device"])
+                    data_coordinates = data[coordinate_idx].to(config["device"])
+
+                    if vis_part == "encoder":
+                        model = raw_model.encode
+                        points = data_coordinates
+                    elif vis_part == "decoder":
+                        model = raw_model.decode
+                        points = latent_coordinates
+
+                    G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis", purpose_part=vis_part)
+                    
+                    G = (G) / torch.std(G.view(len(G), 4), dim=1)[:, None, None]  #  - torch.mean(G.view(len(G), 4), dim=1)[:, None, None]
+
+                    if model_name == "confae-log":
+                        metric_mode = "condition_number"
+                    elif model_name == "geomae":
+                        metric_mode = "volume_preserving"
+                    elif model_name == "irae":
+                        metric_mode = "variance"
+
+                    metric = get_flattening_scores(G, mode=metric_mode)
+
+                    metric = metric[values_in_quantile(metric, 0.90)]
+
+                    tmp = result[model_name][reg_part][vis_part]
+                    result[model_name][reg_part][vis_part] = torch.cat((tmp, metric))
+
+        print(f"seed {seed} done.")
+
+    # average over seeds
+    mean_result = {}
+    std_result = {}
+    for name in config["models"]:
+        mean_result[name] = dict()
+        std_result[name] = dict()
+
+    for model_name, _ in model_regs:
         if model_name == "ae":
             continue
-
-        result[model_name] = {"encoder": dict(), "decoder": dict()}
+        mean_result[model_name] = {"encoder": {"encoder": [], "decoder": []},
+                                "decoder": {"encoder": [], "decoder": []}}
+        std_result[model_name] = {"encoder": {"encoder": [], "decoder": []},
+                                "decoder": {"encoder": [], "decoder": []}}
 
         for reg_part in ["encoder", "decoder"]:
-            raw_model, cfg = load_model(model_name, dataset_name, seed, reg, reg_part=reg_part)
-            train_dl = get_dl(cfg, dataset_name, split="train")
-            test_dl = get_dl(cfg, dataset_name)
-
-            data = torch.cat((test_dl.dataset.data, train_dl.dataset.data))
-            # targets = torch.cat((test_dl.dataset.targets, train_dl.dataset.targets))
-            Z = raw_model.encode(data).detach().cpu()
-
             for vis_part in ["encoder", "decoder"]:
-                coordinate_idx = get_nearest_grid_points(Z, num_steps=8)
-                latent_coordinates = Z[coordinate_idx].to(config["device"])
-                data_coordinates = data[coordinate_idx].to(config["device"])
+                mean_result[model_name][reg_part][vis_part] = torch.mean(result[model_name][reg_part][vis_part]).item()
+                std_result[model_name][reg_part][vis_part] = torch.std(result[model_name][reg_part][vis_part]).item()
 
-                if vis_part == "encoder":
-                    model = raw_model.encode
-                    points = data_coordinates
-                elif vis_part == "decoder":
-                    model = raw_model.decode
-                    points = latent_coordinates
+                # compute mean over seeds
 
-                G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis", purpose_part=vis_part)
-                G0 = random_metric_field_generator(len(G), 2, 1, local_coordinates="exponential")
-                
-                G = (G) / torch.std(G.view(len(G), 4), dim=1)[:, None, None]  #  - torch.mean(G.view(len(G), 4), dim=1)[:, None, None]
+                # result[model_name][reg_part][vis_part] = np.array(result[model_name][reg_part][vis_part])
 
-                # print(vis_part, G.shape, G0.shape, len(torch.mean(G.view(len(G), 4), dim=1)), torch.unique(torch.mean(G.view(len(G), 4), dim=1)), torch.std(G.view(len(G), 4), dim=1))
 
-                if model_name == "confae-log":
-                    metric_mode = "condition_number"
-                elif model_name == "geomae":
-                    metric_mode = "volume_preserving"
-                elif model_name == "irae":
-                    metric_mode = "variance"
+    print(mean_result)
+    print(std_result)
 
-                metric = get_flattening_scores(G, mode=metric_mode)
-                metric0 = get_flattening_scores(G0, mode=metric_mode)
+    table = [[],[]]
+    
+    for mn in ["geomae", "confae-log", "irae"]:
+        for part in ["encoder", "decoder"]:
+            table[0].append(round_significant(
+                [mean_result[mn][part]["encoder"]],
+                [std_result[mn][part]["encoder"]]
+            )[0])
+            table[1].append(round_significant(
+                [mean_result[mn][part]["decoder"]],
+                [std_result[mn][part]["decoder"]
+            ])[0])
 
-                #print("\n\n")
-                #print(G)
-                #print(G0)
-                #print("\n\n")
-
-                #print(metric_mode)
-                #print(metric)
-                #print(metric0)
-
-                #print(reg_part, vis_part, metric_mode, metric.mean())
-                #print("\n")
-
-                metric_rel = metric  #  / metric0
-
-                metric_mean = metric_rel.mean()
-
-                # metric = torch.linalg.cond(G, p=2)
-
-                result[model_name][reg_part][vis_part] = metric_mean.item()
-
+    """
     table = [
         [
-            result["geomae"]["encoder"]["encoder"],
-            result["geomae"]["decoder"]["encoder"],
-            result["confae-log"]["encoder"]["encoder"],
-            result["confae-log"]["decoder"]["encoder"],
-            result["irae"]["encoder"]["encoder"],
-            result["irae"]["decoder"]["encoder"]
+            mean_result["geomae"]["encoder"]["encoder"],
+            mean_result["geomae"]["decoder"]["encoder"],
+            mean_result["confae-log"]["encoder"]["encoder"],
+            mean_result["confae-log"]["decoder"]["encoder"],
+            mean_result["irae"]["encoder"]["encoder"],
+            mean_result["irae"]["decoder"]["encoder"]
         ],
         [
-            result["geomae"]["encoder"]["decoder"],
-            result["geomae"]["decoder"]["decoder"],
-            result["confae-log"]["encoder"]["decoder"],
-            result["confae-log"]["decoder"]["decoder"],
-            result["irae"]["encoder"]["decoder"],
-            result["irae"]["decoder"]["decoder"] 
+            mean_result["geomae"]["encoder"]["decoder"],
+            mean_result["geomae"]["decoder"]["decoder"],
+            mean_result["confae-log"]["encoder"]["decoder"],
+            mean_result["confae-log"]["decoder"]["decoder"],
+            mean_result["irae"]["encoder"]["decoder"],
+            mean_result["irae"]["decoder"]["decoder"] 
         ]
     ]
+    """
 
     rowlabels = np.array(["encoder", "decoder"])
     collabels = np.array(["encoder", "decoder", "encoder", "decoder", "encoder", "decoder"])
@@ -324,8 +358,10 @@ def cn_table(dataset_name, model_regs):
     ) as f:
         f.write(df.to_latex(index=True))
 
-    print(f"dataset: {dataset_name}, cond_table: {result}")
-    
+    # print(f"dataset: {dataset_name}, cond_table: {result}")
+    print(f"DONE: {dataset_name}")
+
+
 def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     # TODO: extract model_name and datase_name from model and test_dl
     data = torch.cat((test_dl.dataset.data, train_dl.dataset.data))
@@ -368,6 +404,11 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     vector_patches, _ = generate_unit_vectors(100, points, G)
     vector_norms = torch.linalg.norm(vector_patches.reshape(-1, 2), dim=1)
     max_vector_norm = torch.max(vector_norms[torch.nonzero(vector_norms)])
+    # max_vector_norm = torch.topk(vector_norms, 4).values[3]
+
+    if model_name == "irae":
+        if dataset_name == "mnist":
+            max_vector_norm *= 1/3
 
     normed_vector_patches = (
         vector_patches / max_vector_norm * stepsize / 2
@@ -412,6 +453,8 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
         get_saving_dir(model_name, dataset_name, f"indicatrix_reg{float(reg)}.png"),
         **get_saving_kwargs(),
     )
+
+    print(get_saving_dir(model_name, dataset_name, f"indicatrix_reg{float(reg)}.png"))
 
     if config["show"]:
         plt.show()

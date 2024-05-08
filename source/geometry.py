@@ -51,15 +51,16 @@ def relaxed_distortion_measure(func, z, eta=0.2, metric='identity', create_graph
 def get_flattening_scores(G, mode='condition_number'):
     if mode == 'condition_number':
         S = torch.svd(G).S
-        scores = S.max(1).values/S.min(1).values - 1  # condition number & added the -1
+        scores = 1 - S.min(1).values/S.max(1).values  # inverted condition number -1
     elif mode == 'variance':
         G_mean = torch.mean(G, dim=0, keepdim=True)
         A = torch.inverse(G_mean)@G
-        scores = torch.sum(torch.log(torch.svd(A).S)**2, dim=1)
+        scores = torch.sqrt(torch.sum(torch.abs(torch.log(torch.svd(A).S)), dim=1))  # **2
     elif mode == 'volume_preserving':
         logdetG = torch.log(torch.clip(torch.det(G), min=1.0e-8))
+        # mean = torch.median(logdetG, dim=0, keepdim=True).values
         mean = torch.mean(logdetG, dim=0, keepdim=True)
-        scores = ((logdetG - mean)**2)
+        scores = torch.sqrt(torch.abs((logdetG - mean)))
     else:
         pass
     return scores

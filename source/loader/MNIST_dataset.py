@@ -67,7 +67,7 @@ class MNIST(MNIST):
         self.data = data
         self.targets = targets
 
-        print(f"MNIST split {split} | {self.data.size()}")
+        # print(f"MNIST split {split} | {self.data.size()}")
   
     def __len__(self):
         return len(self.data)

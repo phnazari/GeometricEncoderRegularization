@@ -3,10 +3,10 @@ device: cpu
 seeds: [1, 2, 3]  # , 2, 3, 4, 5]
 
 models: [
+    "ae",
     "confae-log",
     "geomae",
     "irae",
-    "ae",
 ]
 
 metrics: ["CN", "voR", "VP"]
@@ -35,5 +35,5 @@ show: False
 type_of_mse: "mse"  # in mse and train_mse
 
 part_of_ae:
-  reg: "decoder"
-  vis: "decoder"
+  reg: "encoder"
+  vis: "encoder"

@@ -17,7 +17,6 @@ class EARTH(CustomDataset):
 
     def __init__(self, filename=None, split="training", *args, **kwargs):
         self.filename = filename
-        print(args, kwargs)
         super().__init__(split=split, *args, **kwargs)
 
         # dataset contains some weird labels, which I remove here
@@ -26,7 +25,7 @@ class EARTH(CustomDataset):
         self.targets = self.targets[self.labels != 6]
         self.labels = self.labels[self.labels != 6]
 
-        print(f"EARTH split {split} | {self.data.size()}")
+        # print(f"EARTH split {split} | {self.data.size()}")
 
     @staticmethod
     def transform_labels(labels):
