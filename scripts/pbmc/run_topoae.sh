@@ -17,5 +17,6 @@ python3 source/train.py \
 --config configs/pbmc/topoae.yml \
 --logdir results2/pbmc_z2 \
 --run topoae_reg_seed${seed} \
---decive $1
+--seed $seed \
+--device $1
 done

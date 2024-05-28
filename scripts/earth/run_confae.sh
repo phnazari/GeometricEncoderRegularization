@@ -21,6 +21,7 @@ python source/train.py \
 --run confae_reg${reg}_seed${seed} \
 --model.conf_reg ${reg} \
 --training.seed ${seed} \
---decive $1
+--seed $seed \
+--device $1
 done
 done

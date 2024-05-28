@@ -87,9 +87,14 @@ def get_best_model(dataset, results, method="other"):
         result = results[dataset][model]
         metric = config["METRIC_FOR_MODEL"][model]
 
+        # normalize xs with respect to vanilla ae
+
         xs, vals, _, _, regs = generate_tradeoff_data(result, metric)
 
-        # normalize xs with respect to vanilla ae
+        #if model == "geomae":
+        #    print(xs)
+        #    print(np.mean(results[dataset]["ae"][""][f"{tomse}_"]))
+        
         xs = xs / np.mean(results[dataset]["ae"][""][f"{tomse}_"])
 
         if method == "mindist":
@@ -98,7 +103,19 @@ def get_best_model(dataset, results, method="other"):
             model_regs.append((model, regs[np.argmin(graph_norm)]))
         else:
             # get the last value that is at most 1.1 times the vanilla mse
-            idx = np.where(xs <= 1.3)[0][0]
+
+            # get the maximal regs value corresponding to a mse that is at most 1.1 times the vanilla mse
+            regs_trunc = regs[xs <= 1.3].astype(float)
+            reg = np.amax(regs_trunc)
+            idx = np.argwhere(regs.astype(float) == reg)[0][0]
+
+            #idx = np.where(xs <= 10)[0][0]  # 1.3
+            #if model == "geomae":
+            #    print(np.where(xs <= 1.3))
+            #    print(vals)
+            #    print(xs)
+            #    print(regs)
+            #    print(regs[idx])
 
             model_regs.append((model, regs[idx]))
 
@@ -143,13 +160,26 @@ def generate_tradeoff_data(result, metric):
     mean_mses = np.mean(np.array(mses), axis=1)
     mean_vals = np.mean(np.array(vals), axis=1)
 
-    idx = np.argsort(mean_vals)
+    regs = np.array(regs)
+
+    return mean_mses, mean_vals, std_mses, std_vals, regs
+
+    #print("\n\n")
+    #print(mean_vals)
+
+    idx = np.argsort(mean_vals)  # mean_vals
+    #print(idx)
     mean_mses = mean_mses[idx]
+    #print(mean_mses[idx])
     std_mses = std_mses[idx]
     mean_vals = mean_vals[idx]
     std_vals = std_vals[idx]
 
-    return mean_mses, mean_vals, std_mses, std_vals, np.array(regs)[idx]
+    regs = np.array(regs)[idx]
+
+    #print("\n\n")
+
+    return mean_mses, mean_vals, std_mses, std_vals, regs
 
 
 def load_model(model_name, dataset_name, seed, reg, reg_part=None):
@@ -159,6 +189,8 @@ def load_model(model_name, dataset_name, seed, reg, reg_part=None):
         identifier = f"ae_seed{seed}"
     else:
         identifier = f"{model_name}_reg{reg}_seed{seed}"
+
+    # print(os.path.join(get_results_dir(dataset_name, reg_part=reg_part), f"seed{seed}/"))
 
     model, cfg = load_pretrained(
         root=os.path.join(get_results_dir(dataset_name, reg_part=reg_part), f"seed{seed}/"),

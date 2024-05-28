@@ -154,10 +154,18 @@ def load_pretrained(identifier, config_file, ckpt_file, root='pretrained', **kwa
     ckpt_path = os.path.join(root, identifier, ckpt_file)
     cfg = OmegaConf.load(config_path)
     
+    # print(ckpt_path)
+
     model = get_model(cfg)
     ckpt = torch.load(ckpt_path, map_location='cpu')
     if 'model_state' in ckpt:
         ckpt = ckpt['model_state']
+
+    #if config_file == "geomae.yml" and ckpt_path.split("/")[-4] == "mnist_z2" and ckpt_path.split("/")[-5] == "encoder":
+    #    # print(ckpt_path)
+    #    print(ckpt)
+    #    print(ckpt_path)
+    #    print("\n\n")
     model.load_state_dict(ckpt)
     
     return model, cfg

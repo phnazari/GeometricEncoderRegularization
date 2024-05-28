@@ -61,7 +61,8 @@ def parse_nested_args(d_cmd_cfg):
 
 def run(cfg, writer):
     # Setup seeds
-    seed = cfg.training.get('seed', 1)
+    print(cfg)
+    seed = cfg.get('seed', 1)
     print(f"running with random seed : {seed}")
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)

@@ -11,6 +11,13 @@ import pandas as pd
 from experiments.util import generate_tradeoff_data, get_dl, normalize
 from utils.utils import random_metric_field_generator, get_output_dir, round_significant
 
+from loader.MNIST_dataset import MNIST
+from loader.EARTH_dataset import EARTH
+from loader.POLSURF_dataset import POLSURF
+from loader.ZILIONIS_dataset import ZILIONIS
+from loader.CELEGANS_dataset import CELEGANS
+from loader.PBMC_dataset import PBMC
+
 from models import load_pretrained
 from geometry import get_flattening_scores, get_Riemannian_metric
 
@@ -183,25 +190,82 @@ def latent_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     if reg == "":
         reg = 0
 
-    fig, ax = plt.subplots(figsize=(5, 5))
+    with_legend = True
+    if not with_legend:
+        fig, ax = plt.subplots(figsize=(5, 5))
+    else:
+        if dataset_name == "mnist":
+            fig, ax = plt.subplots(figsize=(30, 5))  # 10
+        elif dataset_name == "pbmc":
+            fig, ax = plt.subplots(figsize=(30, 5))  # 17
+        elif dataset_name == "zilionis":
+            fig, ax = plt.subplots(figsize=(30, 5))  # 15
+        elif dataset_name == "celegans":
+            fig, ax = plt.subplots(figsize=(30, 5))  # 29
+        else:
+            fig, ax = plt.subplots(figsize=(30, 5))  # 10
 
     ax.set_aspect("equal")
     ax.axis("off")
-    fig.tight_layout(pad=0.0)
+    fig.tight_layout(pad=0.)
     plt.margins(0.01, 0.01)
 
     c = targets.detach().cpu()
 
-    ax.scatter(
+    scatter= ax.scatter(
         Z[:, 0],
         Z[:, 1],
         c=c,
         **get_sc_kwargs(),
         zorder=0,
     )
+
+    if with_legend:
+        if dataset_name == "zilionis":
+            handles, _ = scatter.legend_elements(num=None)
+
+            chartBox = ax.get_position()
+            ax.set_position([0, 0, chartBox.width, chartBox.height])
+
+            string_labels = ZILIONIS().transform_labels(os.path.join(config["data_path"], "ZILIONIS"))
+            legend = ax.legend(handles, string_labels, loc="center left", bbox_to_anchor=(1, 0.5), ncol=2, fontsize=22,
+                               markerscale=2)
+        elif dataset_name == "pbmc":
+            handles, _ = scatter.legend_elements(num=None)
+
+            chartBox = ax.get_position()
+            ax.set_position([0, 0, chartBox.width, chartBox.height])
+
+            string_labels = PBMC().transform_labels(os.path.join(config["data_path"], "PBMC"))
+
+            legend = ax.legend(handles, string_labels, loc="center left", bbox_to_anchor=(1, 0.5), fontsize=22,
+                               markerscale=2, ncol=2)
+        elif dataset_name == "celegans":
+            handles, _ = scatter.legend_elements(num=None)
+
+            string_labels = CELEGANS().transform_labels(os.path.join(config["data_path"], "CELEGANS"))
+
+            chartBox = ax.get_position()
+            ax.set_position([0, 0, chartBox.width, chartBox.height])
+
+            legend = ax.legend(handles, string_labels, loc="center left", bbox_to_anchor=(1, 0.5), ncol=4, fontsize=22,
+                               markerscale=2)
+            scatter.legend_elements(prop="colors", num=37)
+        else:
+            chartBox = ax.get_position()
+            ax.set_position([0, 0, chartBox.width, chartBox.height])
+
+            legend = ax.legend(*scatter.legend_elements(num=None), loc="center left", bbox_to_anchor=(1.4, 0.5), ncol=2,
+                               fontsize=22, markerscale=2)
+
+        for lh in legend.legendHandles:
+            lh.set_alpha(1)
+
+    # add legend next to plot
+
     # plt.title(f"{model_name} @ {dataset_name} (reg={float(reg)})")
     plt.savefig(
-        get_saving_dir(model_name, dataset_name, f"latents_reg{float(reg)}.png"),
+        get_saving_dir(model_name, dataset_name, f"latents.png"),  # reg{float(reg)}
         **get_saving_kwargs(),
     )
 
@@ -210,7 +274,7 @@ def latent_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
 
 
 def latent_plots(dataset_name, model_regs):
-    seed = 1
+    seed = 3
 
     for model_name, reg in model_regs:
         model, cfg = load_model(model_name, dataset_name, seed, reg)
@@ -231,8 +295,6 @@ def cn_table(dataset_name, model_regs):
     result = {}
     for name in config["models"]:
         result[name] = dict()
-
-
 
     for seed in config["seeds"]:
         for model_name, reg in model_regs:
@@ -257,6 +319,10 @@ def cn_table(dataset_name, model_regs):
                     latent_coordinates = Z[coordinate_idx].to(config["device"])
                     data_coordinates = data[coordinate_idx].to(config["device"])
 
+                    #if 'points' in locals():
+                    #    print(points.unique())
+                        # points_old = points.clone()
+
                     if vis_part == "encoder":
                         model = raw_model.encode
                         points = data_coordinates
@@ -264,8 +330,24 @@ def cn_table(dataset_name, model_regs):
                         model = raw_model.decode
                         points = latent_coordinates
 
+                    # if 'points' in locals():
+                    #     print(points.unique())
+                    #     print("\n")
+                    #     print(points != points_old)
+                    #     print(torch.sum(points_old != points))
+
                     G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis", purpose_part=vis_part)
-                    
+
+                    #if vis_part == "encoder" and reg_part == "decoder" and dataset_name == "mnist" and model_name == "geomae":
+                        #for name, param in raw_model.named_parameters():
+                        #    if param.requires_grad:
+                        #        print(name, param.data)
+                        # print(cfg)
+                        # print(seed, model_name, reg)
+                        # print(points.unique())
+                        # print(G)
+                        # print("\n")
+
                     # G = (G) / torch.std(G.view(len(G), 4), dim=1)[:, None, None]  #  - torch.mean(G.view(len(G), 4), dim=1)[:, None, None]
 
                     """
@@ -281,20 +363,17 @@ def cn_table(dataset_name, model_regs):
 
                     if model_name == "confae-log":
                         S = torch.svd(G).S
-                        metric_inp = 1 - S.min(1).values/S.max(1).values  # inverted condition number -1
+                        metric_inp = torch.abs(1 - S.min(1).values/S.max(1).values)  # inverted condition number -1
                         metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
                         metric = torch.mean(metric_inp)
                     elif model_name == "geomae":
                         Slog = torch.log(torch.svd(G).S)
-                        # metric_inp = torch.log(torch.clip(torch.det(G), min=1.0e-8))
                         metric_inp = Slog.sum(1)
-                        #if reg_part == "encoder" and vis_part == "decoder":
-                        #    print(metric_inp)
                         metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
                         metric = torch.std(metric_inp)
                     elif model_name == "irae":
                         S = torch.svd(G).S
-                        metric_inp = torch.log(S).sum(1)
+                        metric_inp = torch.log(S).flatten()
                         metric_inp = metric_inp[values_in_quantile(metric_inp, 0.90)]
                         metric = torch.std(metric_inp)
 
@@ -344,6 +423,8 @@ def cn_table(dataset_name, model_regs):
                 [std_result[mn][part]["decoder"]
             ])[0])
 
+    print(np.array(table).shape)
+
     """
     table = [
         [
@@ -390,23 +471,23 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
     if reg == "":
         reg = 0
 
-    coordinate_idx = get_nearest_grid_points(Z, num_steps=8)
-
-    latent_coordinates = Z[coordinate_idx].to(config["device"])
-    data_coordinates = data[coordinate_idx].to(config["device"])
-
     # calculate grid step sizes
     x_min = torch.min(Z[:, 0]).item()
     x_max = torch.max(Z[:, 0]).item()
     y_min = torch.min(Z[:, 1]).item()
     y_max = torch.max(Z[:, 1]).item()
 
-    num_steps_x = 10
+    num_steps_x = 8
     num_steps_y = int((y_max - y_min) / (x_max - x_min) * num_steps_x)
 
     step_size_x = (x_max - x_min) / (num_steps_x)
     step_size_y = (y_max - y_min) / (num_steps_y)
     stepsize = min(step_size_x, step_size_y)
+
+    coordinate_idx = get_nearest_grid_points(Z, num_steps=num_steps_x)
+
+    latent_coordinates = Z[coordinate_idx].to(config["device"])
+    data_coordinates = data[coordinate_idx].to(config["device"])
 
     # Z_pinned_data = model.encode(pinned_data)
     # G = get_pushforwarded_Riemannian_metric(model.encode, data_coordinates.view(data_coordinates.shape[0], -1))
@@ -419,15 +500,27 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
         points = latent_coordinates
 
     G = get_Riemannian_metric(model, points.view(points.shape[0], -1), "vis")
+    if config["part_of_ae"]["vis"] == "encoder":
+        G = torch.inverse(G)
+    # print(G.shape)
 
     vector_patches, _ = generate_unit_vectors(100, points, G)
-    vector_norms = torch.linalg.norm(vector_patches.reshape(-1, 2), dim=1)
-    max_vector_norm = torch.max(vector_norms[torch.nonzero(vector_norms)])
+    vector_norms = torch.linalg.norm(vector_patches, dim=2)
+    vector_norms_maxs = torch.max(vector_norms, dim=1).values
+    # max_vector_norm = torch.max(vector_norms[torch.nonzero(vector_norms)])
+    # scale in such a way that we ignore outliers
+
+    # get 90% quantile of vector norms maxs
+    max_vector_norm = torch.quantile(vector_norms_maxs, 0.9).item()
+
+    #top_vector_norms, _ = torch.topk(vector_norms_maxs, 3)
+    #max_vector_norm = top_vector_norms[-1].item()
+    # max_vector_norm = torch.mean(vector_norms).item()
     # max_vector_norm = torch.topk(vector_norms, 4).values[3]
 
-    if model_name == "irae":
-        if dataset_name == "mnist":
-            max_vector_norm *= 1/3
+    #if model_name == "irae":
+    #    if dataset_name == "mnist":
+    #        max_vector_norm *= 1/3
 
     normed_vector_patches = (
         vector_patches / max_vector_norm * stepsize / 2
@@ -467,27 +560,30 @@ def indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl):
         **get_sc_kwargs(),
         zorder=0,
     )
+
+    # set axis limits s.t. the scatter plot is visible and a small padding
+    #ax.set_xlim(x_min, x_max)
+    #ax.set_ylim(y_min, y_max)
+
     # plt.title(f"{model_name} @ {dataset_name} (reg={float(reg)})")
     plt.savefig(
-        get_saving_dir(model_name, dataset_name, f"indicatrix_reg{float(reg)}.png"),
+        get_saving_dir(model_name, dataset_name, f"indicatrix.png"),
         **get_saving_kwargs(),
     )
-
-    print(get_saving_dir(model_name, dataset_name, f"indicatrix_reg{float(reg)}.png"))
 
     if config["show"]:
         plt.show()
 
 
 def indicatrix_plots(dataset_name, model_regs):
-    seed = 1
+    seed = 3
 
     for model_name, reg in model_regs:
         model, cfg = load_model(model_name, dataset_name, seed, reg)
         train_dl = get_dl(cfg, dataset_name, split="train")
         test_dl = get_dl(cfg, dataset_name)
 
-        print(dataset_name, model_name)
+        print(dataset_name, model_name, reg)
 
         indicatrix_plot(model, model_name, dataset_name, reg, test_dl, train_dl)
 
@@ -539,7 +635,7 @@ Determinant Plot
 
 
 def determinants_plots(dataset_name, model_regs):
-    seed = 1
+    seed = 3
 
     for model_name, reg in model_regs:
         model, cfg = load_model(model_name, dataset_name, seed, reg)
@@ -681,7 +777,7 @@ def determinants_plot(
     ax.axis("off")
 
     plt.savefig(
-        get_saving_dir(model_name, dataset_name, f"determinants_{float(reg)}.png"),
+        get_saving_dir(model_name, dataset_name, f"determinants.png"),  # _{float(reg)}
         **get_saving_kwargs(),
     )
 

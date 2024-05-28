@@ -43,9 +43,9 @@ used_metrics = [
     ("spearman_metric", "SPEAR"),
     ("mse", "MSE (test)"),
     ("train_mse", "MSE (train)"),
-    ("voR", "$\VoR$"),
-    ("VP", "$\VP$"),
-    ("CN", "$\CN$"),
+    #("voR", "$\VoR$"),
+    #("VP", "$\VP$"),
+    #("CN", "$\CN$"),
 ]
 
 with_std = True
@@ -67,6 +67,8 @@ ranked_tables = np.empty((len(datasets), len(models), len(metrics)), dtype=float
 
 results = np.load(os.path.join(get_output_dir(), "results.npy"), allow_pickle=True).item()
 
+results
+
 for dataset in datasets:
     # Load the dictionary from the file
     # results_dict = torch.load(os.path.join(config["results_path"], f"{dataset}/{metrics_dir}/result.pth"))
@@ -79,6 +81,7 @@ for dataset in datasets:
     mean_table = np.empty((len(models), len(metrics)), dtype=float)
     std_table = np.empty((len(models), len(metrics)), dtype=float)
     ranked_table = np.empty((len(models), len(metrics)), dtype=float)
+    compared_table = np.empty((len(models), len(metrics)), dtype=float)
 
     # Iterate through the models and metrics, calculating the mean and standard deviation for each metric for each model
     for i, model in enumerate(models):
@@ -124,7 +127,7 @@ for dataset in datasets:
 
     # Save dataframe to latex file
     with open(
-        os.path.join(get_output_dir(), f"latex/table_{dataset}.tex"), "w"
+        os.path.join(get_output_dir(), "latex", f"table_{dataset}.tex"), "w"
     ) as f:
         f.write(df.to_latex(index=True))
 
@@ -162,5 +165,5 @@ df = pd.DataFrame(mean_ranked_tables.astype(str), columns=collabels, index=rowla
 print(df)
 
 # Save dataframe to latex file
-with open(os.path.join(get_output_dir(), f"latex/table_aggregated.tex"), "w") as f:
+with open(os.path.join(get_output_dir(), "latex", "table_aggregated.tex"), "w") as f:
     f.write(df.to_latex(index=True))

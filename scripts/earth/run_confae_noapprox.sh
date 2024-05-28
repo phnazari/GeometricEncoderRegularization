@@ -22,6 +22,7 @@ python source/train.py \
 --model.conf_reg ${reg} \
 --training.seed ${seed} \
 --model.reg_type conf-noapprox \
---decive $1
+--seed $seed \
+--device $1
 done
 done

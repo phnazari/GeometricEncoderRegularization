@@ -20,6 +20,7 @@ python3 source/train.py \
 --logdir results2/celegans_z2 \
 --run geomae_reg${reg}_seed${seed} \
 --model.geom_reg ${reg} \
---decive $1
+--seed $seed \
+--device $1
 done
 done

@@ -20,6 +20,7 @@ python source/train.py \
 --logdir results2/celegans_z2 \
 --run irae_reg${reg}_seed${seed} \
 --model.iso_reg ${reg} \
---decive $1
+--seed $seed \
+--device $1
 done
 done

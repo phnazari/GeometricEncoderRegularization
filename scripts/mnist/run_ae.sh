@@ -17,5 +17,6 @@ python3 source/train.py \
 --config configs/mnist/ae.yml \
 --logdir results2/mnist_z2 \
 --run ae_seed${seed} \
+--seed $seed \
 --device $1
 done

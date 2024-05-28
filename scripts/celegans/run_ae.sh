@@ -17,5 +17,6 @@ python source/train.py \
 --config configs/celegans/ae.yml \
 --logdir results2/celegans_z2 \
 --run ae_seed${seed} \
---decive $1
+--seed $seed \
+--device $1
 done

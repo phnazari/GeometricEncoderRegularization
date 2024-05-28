@@ -24,13 +24,6 @@ if __name__ == "__main__":
     for dataset in config["datasets"]:
         results[dataset] = dict()
 
-    #results = {
-    #    "mnist": dict(),
-    #    #"earth": dict(),
-    #    #"celegans": dict(),
-    #    #"zilionis": dict(),
-    #    #"pbmc": dict(),
-    #}
     #  "confae-log-inside", "confae-noapprox"]  # "confae-log-inside", "confae-noapprox"]  # , "confae"] # ae
     load = True
     mode = "cn_table"  # tradeoff, reg, indicatrix, detplot, latents, cn_table
@@ -91,4 +84,7 @@ if __name__ == "__main__":
 
     elif mode == "cn_table":
         for dataset in config["datasets"]:
+            print(dataset)
+            print(get_best_model(dataset, results))
+            print("\n")
             cn_table(dataset, get_best_model(dataset, results))
